@@ -11,6 +11,30 @@ jobs:
       - name: 释放空间
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android
+          
+      - name: Cache dl directory
+        uses: actions/cache@v4
+        with:
+          path: dl
+          key: ${{ runner.os }}-openwrt-dl-${{ hashFiles('feeds.conf', 'feeds.conf.default') }}
+          restore-keys: |
+            ${{ runner.os }}-openwrt-dl-
+
+      - name: Cache build_dir directory
+        uses: actions/cache@v4
+        with:
+          path: build_dir
+          key: ${{ runner.os }}-openwrt-build_dir-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-openwrt-build_dir-
+  
+      - name: Cache staging_dir directory
+        uses: actions/cache@v4
+        with:
+          path: staging_dir
+          key: ${{ runner.os }}-openwrt-staging_dir-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-openwrt-staging_dir-
 
       - name: 安装以来
         run: |
