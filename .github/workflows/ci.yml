@@ -96,77 +96,85 @@ jobs:
         run: |
           make -j$(nproc) IGNORE_ERRORS=1
 
-      - name: 上传bin文件到制品仓库
+      # - name: 上传bin文件到制品仓库
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: bin-ipq50xx-arm
+      #     path: bin/targets/ipq50xx/arm/*
+
+      # - name: 上传dl文件到制品仓库
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: dl
+      #     path: dl/*
+
+      - name: 上传ubi/bin文件到制品仓库
         uses: actions/upload-artifact@v4
         with:
-          name: bin-ipq50xx-arm
-          path: bin/targets/ipq50xx/arm/*
+          name: openwrt-release-${{ github.ref_name }}
+          path: |
+            bin/targets/**/openwrt-ipq50xx-arm-redmi_ax3000*.ubi
+            bin/targets/**/openwrt-ipq50xx-arm-redmi_ax3000*.bin
+  # release:
+  #   needs: [ build ]
+  #   runs-on: ubuntu-22.04
+  #   permissions:
+  #     contents: write
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
 
-      - name: 上传dl文件到制品仓库
-        uses: actions/upload-artifact@v4
-        with:
-          name: dl
-          path: dl/*
-  release:
-    needs: [ build ]
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  #     - name: Download dl from artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: dl
+  #         path: dl/
 
-      - name: Download dl from artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dl
-          path: dl/
+  #     - name: Download bin from artifacts
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: bin-ipq50xx-arm
+  #         path: bin/targets/ipq50xx/arm/
 
-      - name: Download bin from artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: bin-ipq50xx-arm
-          path: bin/targets/ipq50xx/arm/
+  #     - name: Tar
+  #       run: |
+  #         tar cvf dl.tar -C dl/ .
+  #         tar cvf bin-ipq50xx.tar -C bin/targets/ipq50xx/arm/ .
 
-      - name: Tar
-        run: |
-          tar cvf dl.tar -C dl/ .
-          tar cvf bin-ipq50xx.tar -C bin/targets/ipq50xx/arm/ .
+  #     - name: Generate release informations
+  #       run: |
+  #         TIME="$(curl "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" | jq -r .created_at)"
 
-      - name: Generate release informations
-        run: |
-          TIME="$(curl "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}" | jq -r .created_at)"
+  #         TAG="ci-${GITHUB_REF_NAME}-$(date -d "${TIME}" -u +'%Y%m%d-%H%M%S-%Z')"
+  #         echo "TAG=$TAG" >>$GITHUB_ENV
 
-          TAG="ci-${GITHUB_REF_NAME}-$(date -d "${TIME}" -u +'%Y%m%d-%H%M%S-%Z')"
-          echo "TAG=$TAG" >>$GITHUB_ENV
+  #         cat <<EOF | sed -E 's/^  //' >Release.md
+  #           CI ${GITHUB_REF_NAME} $(date -d "${TIME}" -u +'%Y-%m-%d %H:%M:%S %Z(%:z)')
 
-          cat <<EOF | sed -E 's/^  //' >Release.md
-            CI ${GITHUB_REF_NAME} $(date -d "${TIME}" -u +'%Y-%m-%d %H:%M:%S %Z(%:z)')
+  #           # ${GITHUB_REF_NAME}
 
-            # ${GITHUB_REF_NAME}
+  #           Build time: \`$(date -d "${TIME}" -u +'%Y-%m-%d %H:%M:%S %Z(%:z)')\`
+  #           Release version: ${TAG}
 
-            Build time: \`$(date -d "${TIME}" -u +'%Y-%m-%d %H:%M:%S %Z(%:z)')\`
-            Release version: ${TAG}
+  #           ## Sources
+  #           $(cat bin/targets/ipq50xx/arm/feeds.buildinfo | awk -F'[ ^]' '{printf "%s: `%s`\n", $2, $4}')
 
-            ## Sources
-            $(cat bin/targets/ipq50xx/arm/feeds.buildinfo | awk -F'[ ^]' '{printf "%s: `%s`\n", $2, $4}')
+  #           ## SHA256
+  #           $(cat bin/targets/ipq50xx/arm/sha256sums | awk '{printf "%s: `%s`\n", $2, $1}' | sed -E 's/^\*//')
+  #         EOF
 
-            ## SHA256
-            $(cat bin/targets/ipq50xx/arm/sha256sums | awk '{printf "%s: `%s`\n", $2, $1}' | sed -E 's/^\*//')
-          EOF
+  #         echo "NAME=$(head --line=1 Release.md)" >>$GITHUB_ENV
+  #         tail --line=+2 Release.md >Body.md
 
-          echo "NAME=$(head --line=1 Release.md)" >>$GITHUB_ENV
-          tail --line=+2 Release.md >Body.md
-
-      - name: Release
-        uses: softprops/action-gh-release@v1
-        with:
-          prerelease: true
-          tag_name: ${{ env.TAG }}
-          target_commitish: ${{ github.sha }}
-          name: ${{ env.NAME }}
-          body_path: Body.md
-          files: |
-            bin/targets/ipq50xx/arm/sha256sums
-            bin/targets/ipq50xx/arm/*.*
-            *.tar
+  #     - name: Release
+  #       uses: softprops/action-gh-release@v1
+  #       with:
+  #         prerelease: true
+  #         tag_name: ${{ env.TAG }}
+  #         target_commitish: ${{ github.sha }}
+  #         name: ${{ env.NAME }}
+  #         body_path: Body.md
+  #         files: |
+  #           bin/targets/ipq50xx/arm/sha256sums
+  #           bin/targets/ipq50xx/arm/*.*
+  #           *.tar
